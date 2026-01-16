@@ -1,0 +1,42 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: etherfi
+      POSTGRES_PASSWORD: etherfi
+      POSTGRES_DB: etherfi
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    environment:
+      PORT: 8080
+      DATABASE_URL: postgres://etherfi:etherfi@postgres:5432/etherfi?sslmode=disable
+      ETHERFI_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/etherfi-protocol/etherfi-mainnet
+      LIDO_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/lidofinance/lido
+    ports:
+      - '8080:8080'
+    depends_on:
+      - postgres
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    environment:
+      NEXT_PUBLIC_API_BASE: http://backend:8080
+      NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID: ${NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID}
+    ports:
+      - '3000:3000'
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
